@@ -1,9 +1,9 @@
 #! usr/bin/env python3
 
 lista = [8,4,2,14,6,72,623,5,86,13]
-n = len(lista)
 
 def sort_list(list):
+    n = len(lista)
     for i in range(n):
         list_sorted = True
 
