@@ -10,9 +10,9 @@ try:
     if ileliczb > maksliczba : 
         print("Bledne dane!")
         exit()
-    except ValueError:
-        print("Bledne dane!")
-        exit()
+except ValueError:
+    print("Bledne dane!")
+    exit()
 
 liczby = []
 i = 0
