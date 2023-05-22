@@ -50,6 +50,7 @@ def create(connection, array):
     validate(values)
     query = (f'INSERT INTO {table} VALUES ({values});')
     operation(connection, query)
+    connection.commit()
 
 
 def read(connection):
