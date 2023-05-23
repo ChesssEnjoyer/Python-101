@@ -1,121 +1,124 @@
+#! usr/bin/env python3
+
 import pymysql
 from api_school import app
 from config import mysql
 from flask import jsonify
-from flask import flash, request
+from flask import request
 
-@app.route('/create', methods=['POST'])
-def create_std():
-    try:        
-        _json = request.json
-        _name = _json['FirstName']
-        _lastname = _json['LastName']
-        _class = _json['class']
+
+def json():
+    _json = request.json
+    _name = _json['FirstName']
+    _lastname = _json['LastName']
+    _class = _json['class']
+    _id = _json['id']
+    
+    return _name, _lastname, _class, _id
+
+
+def connect():
+    connect = mysql.connect()	
+    cursor = connect.cursor(pymysql.cursors.DictCursor)
+    
+    return connect, cursor
+    
+    
+def connection_close(connection, cursor):
+    connection.close()
+    cursor.close()
+    return "Closed"
+
+def query_execute(connection, cursor, query, data):
+    cursor.execute(query, data)
+    connection.commit()
+    return "Query executed successfully!"
+    
+
+
+@app.route('/students/add', methods=['POST'])
+def add_student():
+    try:
+        connection, cursor = connect()
+        _name, _lastname, _class, _id= json()
         if _name and _lastname and _class and request.method == 'POST':
-            conn = mysql.connect()
-            cursor = conn.cursor(pymysql.cursors.DictCursor)		
-            sqlQuery = "INSERT INTO students(FirstName, LastName, class) VALUES( %s, %s, %s)"
-            bindData = (_name, _lastname, _class)            
-            cursor.execute(sqlQuery, bindData)
-            conn.commit()
-            respone = jsonify('Student added successfully!')
-            respone.status_code = 200
-            return respone
+            query = "INSERT INTO students(FirstName, LastName, class, id) VALUES( %s, %s, %s, %s)"
+            data = (_name, _lastname, _class, _id)
+            return query_execute(connection, cursor, query, data)
         else:
             return showMessage()
     except Exception as e:
         print(e)
     finally:
-        cursor.close() 
-        conn.close()          
+        connection_close(connection, cursor)        
      
-@app.route('/students')
-def std():
+     
+@app.route('/students/list')
+def students_list():
     try:
-        conn = mysql.connect()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("SELECT id, FirstName, LastName, class FROM students")
+        connection, cursor = connect()
+        query = "SELECT id, FirstName, LastName, class FROM students"
+        cursor.execute(query)
         stdRows = cursor.fetchall()
         respone = jsonify(stdRows)
-        respone.status_code = 200
         return respone
     except Exception as e:
         print(e)
     finally:
-        cursor.close() 
-        conn.close()  
+        connection_close(connection, cursor)
 
-@app.route('/students/')
+
+@app.route('/students/details')
 def student_details():
     try:
-        _json = request.json
-        _id = _json['id']
-        conn = mysql.connect()
-        cursor = conn.cursor(pymysql.cursors.DictCursor)
-        cursor.execute("SELECT * FROM students WHERE id =%s", _id)
+        _id = request.json['id']
+        connection, cursor = connect()	
+        query = "SELECT * FROM students WHERE id = %s"
+        cursor.execute(query, _id)
         stdRow = cursor.fetchone()
         respone = jsonify(stdRow)
-        respone.status_code = 200
         return respone
     except Exception as e:
         print(e)
     finally:
-        cursor.close() 
-        conn.close() 
+        connection_close(connection, cursor) 
 
-@app.route('/update', methods=['PUT'])
-def update_std():
+@app.route('/students/update', methods=['PUT'])
+def students_update():
     try:
-        _json = request.json
-        _id = _json['id']
-        _name = _json['FirstName']
-        _lastname = _json['LastName']
-        _class = _json['class']
+        connection, cursor = connect()
+        _name, _lastname, _class, _id= json()
         if _name and _lastname and _class and _id and request.method == 'PUT':			
-            sqlQuery = "UPDATE students SET FirstName=%s, LastName=%s, class=%s WHERE id=%s"
-            bindData = (_name, _lastname, _class , _id,)
-            conn = mysql.connect()
-            cursor = conn.cursor()
-            cursor.execute(sqlQuery, bindData)
-            conn.commit()
-            respone = jsonify('Student updated successfully!')
-            respone.status_code = 200
-            return respone
+            query = "UPDATE students SET FirstName=%s, LastName=%s, class=%s WHERE id=%s"
+            data = (_name, _lastname, _class, _id)
+            return query_execute(connection, cursor, query, data)
         else:
             return showMessage()
     except Exception as e:
         print(e)
     finally:
-        cursor.close() 
-        conn.close() 
+        connection_close(connection, cursor)
 
-@app.route('/delete', methods=['DELETE'])
+@app.route('/students/delete', methods=['DELETE'])
 def delete_std():
     try:
-        conn = mysql.connect()
-        cursor = conn.cursor()
-        _json = request.json
-        _id = _json['id']
-        cursor.execute("DELETE FROM students WHERE id = %s", _id)
-        conn.commit()
-        response = jsonify('Student deleted successfully')
-        response.status_code = 200
-        return response
+        connection, cursor = connect()
+        _id = request.json['id']
+        query = "DELETE FROM students WHERE id = %s"
+        return query_execute(connection, cursor, query, _id)
     except Exception as e:
         print(e)
     finally:
-        cursor.close()
-        conn.close()
+        connection_close(connection, cursor)
         
        
 @app.errorhandler(404)
-def showMessage(error=None):
+def showMessage(self):
     message = {
         'status': 404,
         'message': 'Record not found: ' + request.url,
     }
     respone = jsonify(message)
-    respone.status_code = 404
     return respone
         
 if __name__ == "__main__":

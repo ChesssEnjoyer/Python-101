@@ -6,3 +6,16 @@ When method GET
 Then status 200
 And print responseStatus
 And print response
+
+Scenario: Post student
+Given url 'http://localhost:5000/students/add'
+And request
+"""
+{
+    "FirstName": "Giovani",
+    "LastName": "Picolini",
+    "class": "2b"
+}
+"""
+When method POST
+Then status 201

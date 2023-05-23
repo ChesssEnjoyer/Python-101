@@ -1,3 +1,5 @@
+#! usr/bin/env python3
+
 from api_school import app
 from flaskext.mysql import MySQL
 
