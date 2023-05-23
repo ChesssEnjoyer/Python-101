@@ -5,6 +5,7 @@ import json
 from mysql.connector import Error
 import argparse
 from tabulate import tabulate
+from re import search
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-o", "--option", help="c-insert into table, r-select from table, u-update existing record, d-delete row from table")
@@ -19,6 +20,12 @@ args = parser.parse_args()
 config = json.load(open('config.json'))
 
 
+def validate(check):
+    if search(";", check):
+        print('Do not use ";". Script does it automatly.')
+        exit()
+        
+
 def db_connect(host, user, password, database):
     connection = None
     try: 
@@ -30,7 +37,7 @@ def db_connect(host, user, password, database):
     return connection
 
 
-def operation(connection, query):
+def send_query(connection, query):
     cursor = connection.cursor()
     try:
         cursor.execute(query)
@@ -42,14 +49,18 @@ def operation(connection, query):
 def create(connection):
     vals = args.values
     values = vals.replace(',', '", "')
+    validate(args.table)
+    validate(values)
     query = (f'INSERT INTO {args.table} VALUES ("{values}");')
-    operation(connection, query)
+    send_query(connection, query)
     connection.commit()
 
 
 def read(connection):
     cursor = connection.cursor()
     result = None
+    validate(args.columns)
+    validate(args.table)
     if args.columns == 'all':
         query = (f'SELECT * FROM {args.table}')
     else:
@@ -66,21 +77,26 @@ def read(connection):
 
 
 def update(connection):
+    validate(args.table)
+    validate(args.columns)
+    validate(args.where)
     cols = args.columns
     columns = cols.replace('=', '="')
     column = columns.replace(' ', '" ')
     query = (f'UPDATE {args.table} SET {column}" WHERE {args.where};')
-    operation(connection, query)
+    send_query(connection, query)
     connection.commit()
     
     
 def delete(connection):
+    validate(args.table)
+    validate(args.where)
     query = (f'DELETE FROM {args.table} WHERE {args.where}')
-    operation(connection, query)
+    send_query(connection, query)
     connection.commit()
 
 
-def query(connection):
+def operation(connection):
     if args.option == 'c':
         create(connection)
     elif args.option == 'r':
@@ -94,8 +110,10 @@ def query(connection):
 
 
 def main():
+    validate(args.database)
     connect = db_connect(config['host'], config['user'], config['password'], args.database)
-    query(connect)
+    operation(connect)
+    connect.close()
     
     
 main()
