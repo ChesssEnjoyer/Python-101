@@ -1,20 +1,19 @@
 #! usr/bin/env python3
 
+import json
 import pymysql
 from api_school import app
 from config import mysql
 from flask import jsonify
 from flask import request
+from re import search
 
 
-def json():
-    _json = request.json
-    _name = _json['FirstName']
-    _lastname = _json['LastName']
-    _class = _json['class']
-    _id = _json['id']
-    
-    return _name, _lastname, _class, _id
+def validate(check):
+    blocked = [";", "<", ">"]
+    if any([x in check for x in blocked]):
+        quit()
+
 
 
 def connect():
@@ -40,17 +39,25 @@ def query_execute(connection, cursor, query, data):
 def add_student():
     try:
         connection, cursor = connect()
-        _name, _lastname, _class, _id= json()
-        if _name and _lastname and _class and request.method == 'POST':
-            query = "INSERT INTO students(FirstName, LastName, class, id) VALUES( %s, %s, %s, %s)"
-            data = (_name, _lastname, _class, _id)
-            return query_execute(connection, cursor, query, data)
-        else:
-            return showMessage()
+        tab = request.json
+        for i in range(0, len(tab)):
+            dict = tab[i]
+            validate(dict)
+            _name = dict['FirstName']
+            _lastname = dict['LastName']
+            _class = dict['class']
+            _id = dict['id']
+            if _name and _lastname and _class and request.method == 'POST':
+                query = "INSERT INTO students(FirstName, LastName, class, id) VALUES( %s, %s, %s, %s)"
+                data = (_name, _lastname, _class, _id)
+                query_execute(connection, cursor, query, data)
+            else:
+                return showMessage()
     except Exception as e:
         print(e)
     finally:
         connection_close(connection, cursor)        
+        return "Query successfull"
      
      
 @app.route('/students/list')
@@ -71,13 +78,18 @@ def students_list():
 @app.route('/students/details')
 def student_details():
     try:
-        _id = request.json['id']
-        connection, cursor = connect()	
-        query = "SELECT * FROM students WHERE id = %s"
-        cursor.execute(query, _id)
-        stdRow = cursor.fetchone()
-        respone = jsonify(stdRow)
-        return respone
+        connection, cursor = connect()
+        tab = request.json
+        response = []
+        for i in range(0, len(tab)):
+            dict = tab[i]
+            validate(dict)
+            _id = dict['id']
+            query = "SELECT * FROM students WHERE id = %s"
+            cursor.execute(query, _id)
+            stdRow = cursor.fetchone()
+            response.append(stdRow)
+        return response
     except Exception as e:
         print(e)
     finally:
@@ -87,29 +99,43 @@ def student_details():
 def students_update():
     try:
         connection, cursor = connect()
-        _name, _lastname, _class, _id= json()
-        if _name and _lastname and _class and _id and request.method == 'PUT':			
-            query = "UPDATE students SET FirstName=%s, LastName=%s, class=%s WHERE id=%s"
-            data = (_name, _lastname, _class, _id)
-            return query_execute(connection, cursor, query, data)
-        else:
-            return showMessage()
+        tab = request.json
+        for i in range(0, len(tab)):
+            dict = tab[i]
+            validate(dict)
+            _name = dict['FirstName']
+            _lastname = dict['LastName']
+            _class = dict['class']
+            _id = dict['id']
+            if _name and _lastname and _class and _id and request.method == 'PUT':			
+                query = "UPDATE students SET FirstName=%s, LastName=%s, class=%s WHERE id=%s"
+                data = (_name, _lastname, _class, _id)
+                query_execute(connection, cursor, query, data)
+            else:
+                return showMessage()
     except Exception as e:
         print(e)
     finally:
         connection_close(connection, cursor)
+        return "Query executed succesfully"
+        
 
 @app.route('/students/delete', methods=['DELETE'])
 def delete_std():
     try:
         connection, cursor = connect()
-        _id = request.json['id']
-        query = "DELETE FROM students WHERE id = %s"
-        return query_execute(connection, cursor, query, _id)
+        tab = request.json
+        for i in range(0, len(tab)):
+            dict = tab[i]
+            validate(dict)
+            _id = dict['id']
+            query = "DELETE FROM students WHERE id = %s"
+            query_execute(connection, cursor, query, _id)
     except Exception as e:
         print(e)
     finally:
         connection_close(connection, cursor)
+        return "Query executed successfully"
         
        
 @app.errorhandler(404)
