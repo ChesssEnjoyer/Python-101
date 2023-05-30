@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>School database</title>
+    <link rel="shortcut icon" href="#">
+</head>
+<body>
+    <h1>Elo zelo podaj rzeczy</h1>
+    <form action="index.html" method="post">
+        <p>Choose method to execute: </p>
+        <select id="method">
+            <option value="" selected disabled hidden>--choose--</option>
+            <option value="GET" onclick="showget()">GET</option>
+            <option value="POST" onclick="showpost()">POST</option>
+            <option value="PUT" onclick="showput()">PUT</option>
+            <option value="DELETE" onclick="showdel()">DELETE</option>
+        </select> <br><br>
+
+        What columns u want to update/select where/delete where: <br>
+        <input type="checkbox" id="cbox_firstname" onchange="showhide_firstname()">FirstName
+        <input type="checkbox" id="cbox_lastname" onchange="showhide_lastname()">LastName
+        <input type="checkbox" id="cbox_class" onchange="showhide_clas()">Class
+        <input type="checkbox" id="cbox_id" onchange="showhide_id()">ID
+
+        <p id='p_firstname'>Enter Name of student:</p>
+        <input type="text" id="firstname" name="firstname"><br>
+        <p id="p_lastname">Enter Lastname of student :</p>
+        <input type="text" id="lastname" name="lastname"><br>
+        <p id="p_class">Enter student class:</p>
+        <input type="text" id="class" name="class"><br>
+        <p id = 'p_id'>Enter student id:</p>
+        <input type="text" id="id"><br>
+    </form>
+    <button onclick='students_add()'>SHOW FOR ME</button>
+    <div id='resultat'></div>
+</body>
+<script type="text/javascript" src="../js/main.js"></script>
+<script src="../python/main_ui.py"></script>
+</html>

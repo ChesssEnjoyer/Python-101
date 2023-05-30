@@ -37,3 +37,5 @@ def validate(check):
         
 slowko = "elo>"
 validate(slowko)
+
+CREATE TABLE students(id INT PRIAMRY KEY AUTO_INCREMENT, FirstName VARCHAR(15), LastName VARCHAR(20), class VARCHAR(4))
