@@ -1,12 +1,11 @@
 #! usr/bin/env python3
+print("Access-Control-Allow-Origin: *")
 
-import json
+from flask_cors import cross_origin
 import pymysql
 from api_school import app
 from config import mysql
-from flask import jsonify
-from flask import request
-from re import search
+from flask import jsonify, request, render_template
 
 
 def validate(check):
@@ -14,6 +13,9 @@ def validate(check):
     if any([x in check for x in blocked]):
         quit()
 
+
+def home():
+    return render_template('../templates/index.html')
 
 
 def connect():
@@ -28,39 +30,42 @@ def connection_close(connection, cursor):
     cursor.close()
     return "Closed"
 
+
 def query_execute(connection, cursor, query, data):
     cursor.execute(query, data)
     connection.commit()
     return "Query executed successfully!"
-    
 
 
 @app.route('/students/add', methods=['POST'])
+@cross_origin(supports_credentials=True)
 def add_student():
     try:
         connection, cursor = connect()
-        tab = request.json
-        for i in range(0, len(tab)):
-            dict = tab[i]
-            validate(dict)
-            _name = dict['FirstName']
-            _lastname = dict['LastName']
-            _class = dict['class']
-            _id = dict['id']
-            if _name and _lastname and _class and request.method == 'POST':
-                query = "INSERT INTO students(FirstName, LastName, class, id) VALUES( %s, %s, %s, %s)"
-                data = (_name, _lastname, _class, _id)
+        _name = request.form('firstname')
+        _lastname = request.form('lastname')
+        _class = request.form('class')
+        print(_name, _lastname, _class)
+        if _name and _lastname and _class and request.method == 'POST':
+            data = (_name, _lastname, _class)
+            query1 = "SELECT * FROM students WHERE FirstName = %s AND LastName = %s AND class = %s"
+            existance = cursor.execute(query1, data)
+            if existance != 1:
+                query = "INSERT INTO students(FirstName, LastName, class) VALUES(%s, %s, %s)"
                 query_execute(connection, cursor, query, data)
             else:
-                return showMessage()
+                exist ='This student already exists in our system.' 
+                return exist
+        return 'Query executed successfully'
     except Exception as e:
         print(e)
     finally:
         connection_close(connection, cursor)        
-        return "Query successfull"
+
      
      
 @app.route('/students/list')
+@cross_origin(origins='*')
 def students_list():
     try:
         connection, cursor = connect()
@@ -81,19 +86,34 @@ def student_details():
         connection, cursor = connect()
         tab = request.json
         response = []
+        
         for i in range(0, len(tab)):
             dict = tab[i]
             validate(dict)
-            _id = dict['id']
-            query = "SELECT * FROM students WHERE id = %s"
-            cursor.execute(query, _id)
-            stdRow = cursor.fetchone()
+            
+            if dict.get('id') is not None:
+                data = dict['id']
+                query = "SELECT * FROM students WHERE id = %s"
+            elif dict.get('FirstName') is not None:
+                data = dict['FirstName']
+                query = "SELECT * FROM students WHERE FirstName = %s"
+            elif dict.get('LastName') is not None:
+                data = dict['LastName']
+                query = "SELECT * FROM students WHERE LastName = %s"
+            elif dict.get('class') is not None:
+                data = dict['class']
+                query = "SELECT * FROM students WHERE class = %s"
+            cursor.execute(query, data)
+            stdRow = cursor.fetchall()
             response.append(stdRow)
         return response
+    
     except Exception as e:
         print(e)
+        
     finally:
         connection_close(connection, cursor) 
+
 
 @app.route('/students/update', methods=['PUT'])
 def students_update():
